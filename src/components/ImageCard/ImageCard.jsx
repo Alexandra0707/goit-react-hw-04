@@ -1,17 +1,10 @@
+import "react";
 import s from "./ImageCard.module.css";
 
-const ImageCard = ({ image, openModal }) => {
-  const {
-    alt_description,
-    urls: { small },
-  } = image;
-  return (
-    <>
-      <div className={s.card} onClick={() => openModal(image)}>
-        <img src={small} alt={alt_description} className={s.image} />
-      </div>
-    </>
-  );
-};
+const ImageCard = ({ image }) => (
+  <div className={s.box}>
+    <img src={image.urls.small} alt={image.alt_description} className={s.img} />
+  </div>
+);
 
 export default ImageCard;

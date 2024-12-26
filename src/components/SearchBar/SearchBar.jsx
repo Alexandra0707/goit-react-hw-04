@@ -1,36 +1,28 @@
+import { useState } from "react";
 import s from "./SearchBar.module.css";
-import toast from "react-hot-toast";
 
 const SearchBar = ({ onSubmit }) => {
+  const [input, setInput] = useState("");
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const inputValue = e.target.elements.searchInput.value.trim();
-    if (inputValue === "") {
-      toast.error("Please enter the field", {
-        style: {
-          backgroundColor: "#D924247F",
-          color: "#fff",
-        },
-      });
-      return;
-    }
-
-    onSubmit(inputValue);
-    e.target.reset();
+    onSubmit(input);
+    setInput("");
   };
+
   return (
     <header className={s.header}>
-      <form className={s.form} name="searchForm" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className={s.form}>
         <input
-          className={s.input}
           type="text"
-          name="searchInput"
           autoComplete="off"
           autoFocus
           placeholder="Search images and photos"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className={s.input}
         />
-
-        <button className={s.btn} type="submit">
+        <button type="submit" className={s.btn}>
           Search
         </button>
       </form>

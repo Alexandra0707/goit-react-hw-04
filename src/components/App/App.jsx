@@ -1,74 +1,82 @@
-import { useEffect, useState } from "react";
-import { fetchImages } from "../../services/Api";
-import ImageGallery from "../ImageGallery/ImageGallery";
-import Loader from "../Loader/Loader";
-import LoadMoreBtn from "../LoadMoreBtn/LoadMoreBtn";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
-import SearchBar from "../SearchBar/SearchBar";
-import ImageModal from "../ImageModal/ImageModal";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import SearchBar from "./SearchBar/SearchBar";
+import ImageGallery from "./ImageGallery/ImageGallery";
+import Loader from "./Loader/Loader";
+import ErrorMessage from "./ErrorMessage/ErrorMessage";
+import LoadMoreBtn from "./LoadMoreBtn/LoadMoreBtn";
+import ImageModal from "./ImageModal/ImageModal";
+import toast, { Toaster } from "react-hot-toast";
+import s from "./App.module.css";
 
-function App() {
+const ACCESS_KEY = "_n-WbaYYa46dr_uXsPI1IKic8i9afKM0-wnW4vh-ACg";
+
+const App = () => {
+  const [images, setImages] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [images, setImages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
 
   useEffect(() => {
-    if (!query) {
-      return;
+    if (query) {
+      fetchImages();
     }
-
-    const getData = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-        const { results, total_pages } = await fetchImages(query, page);
-        setImages((prev) => [...prev, ...results]);
-        setTotalPages(total_pages);
-      } catch (error) {
-        console.log("Error in getData:", error);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getData();
   }, [query, page]);
 
-  const onSubmit = (value) => {
-    setPage(1);
-    setImages([]);
-    setQuery(value);
+  const fetchImages = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "https://api.unsplash.com/search/photos",
+        {
+          params: { query, page, per_page: 12 },
+          headers: { Authorization: `Client-ID ${ACCESS_KEY}` },
+        }
+      );
+      setImages((prevImages) => [...prevImages, ...response.data.results]);
+      setError(null);
+    } catch (error) {
+      setError(`Could not fetch images. Try again later.${error.message}`);
+    }
+    setLoading(false);
   };
 
-  const onPage = () => {
-    if (page >= totalPages) {
-      console.log("No more images to load");
+  const handleSearchSubmit = (inputQuery) => {
+    if (!inputQuery.trim()) {
+      toast.error("Please enter a search term!");
       return;
     }
-    setPage((prev) => prev + 1);
+    setQuery(inputQuery);
+    setImages([]);
+    setPage(1);
+    setError(null);
   };
 
-  const openModal = (image) => setSelectedImage(image);
-  const closeModal = () => setSelectedImage(null);
+  const loadMoreImages = () => setPage((prevPage) => prevPage + 1);
+
+  const openModal = (image) => {
+    setModalImage(image);
+    setShowModal(true);
+  };
+
+  const closeModal = () => setShowModal(false);
 
   return (
-    <div>
-      <SearchBar onSubmit={onSubmit} />
-      {images.length > 0 && (
-        <ImageGallery images={images} openModal={openModal} />
+    <div className={s.box}>
+      <Toaster />
+      <SearchBar onSubmit={handleSearchSubmit} />
+      {error && <ErrorMessage message={error} />}
+      <ImageGallery images={images} onImageClick={openModal} />
+      {loading && <Loader />}
+      {images.length > 0 && !loading && (
+        <LoadMoreBtn onClick={loadMoreImages} />
       )}
-      {isLoading && <Loader />}
-      {isError && <ErrorMessage />}
-      {images.length > 0 && page < totalPages && !isError && (
-        <LoadMoreBtn onPage={onPage} isLoading={isLoading} />
-      )}
-      <ImageModal image={selectedImage} onClose={closeModal} />
+      {showModal && <ImageModal image={modalImage} onClose={closeModal} />}
     </div>
   );
-}
+};
 
 export default App;
